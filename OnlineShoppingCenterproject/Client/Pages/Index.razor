@@ -1,0 +1,169 @@
+﻿@page "/"
+@using OnlineShoppingCenterproject.Client.Pages.Product
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Entities
+@inject IProductService ProductService
+
+<ForHome />
+<article class="container">
+	@if (loading)
+	{
+		<div class="d-flex flex-row" style="min-width: 18rem; max-width:30.5%;">
+			<span class="spinner-border spinner-border-lg align-center"></span>
+		</div>
+	}
+	else
+	{
+		
+	<div class="form-group row mt-4 col-12">
+		<div class="col-1" />
+		<div class="form-inline col-7">
+			<select id="sortOrder" @onchange="SelectionChanged" class="form-control">
+				<option value="">Select Sort</option>
+				@foreach (var value in sortOrder)
+				{
+					<option value="@value">@value</option>
+				}
+			</select>
+		</div>
+		<div>
+			<EditForm Model="Search" class="form-inline mt-2">
+				<InputText @bind-Value="Search" class="form-control mr-sm-2" placeholder="ara" />
+				<button @onclick="(()=>PageSearch(Search))" class="form-control btn btn-outline-success btn-lg">ara</button>
+			</EditForm>
+		</div>
+	</div>
+
+	@if (ProductService.PagedProducts.Results.Count > 0)
+	{
+		<section style="margin-bottom:120px;">
+			<div class="container" style="margin-left:10px;">
+				<div class="row">
+					@if (ProductService.PagedProducts.Results != null)
+					{
+						@foreach (var item in ProductService.PagedProducts.Results)
+						{
+							@if (item != null)
+							{
+								<ProductCardView product=item />
+							}
+						}
+					}
+				</div>
+			</div>
+		</section>
+		<Pager Result=@ProductService.PagedProducts PageChanged=@PagerPageChanged />
+	}
+
+
+	<div class="container">
+		<div class="row justify-content-center mb-5">
+			<div class="col-md-7 heading-section text-center ">
+				<span class="subheading">Blog</span>
+				<h2>Recent Blog</h2>
+			</div>
+		</div>
+		<div class="row d-flex">
+			<div class="col-lg-6 d-flex align-items-stretch ">
+				<div class="blog-entry d-flex">
+					<a href="blog-single.html" class="block-20 img" style="background-image: url('images/image_1.jpg');">
+					</a>
+					<div class="text p-4 bg-light">
+						<div class="meta">
+							<p><span class="fa fa-calendar"></span> 23 April 2020</p>
+						</div>
+						<h3 class="heading mb-3"><a href="#">The Recipe from a Winemaker’s Restaurent</a></h3>
+						<p>A small river named Duden flows by their place and supplies it with the necessary regelialia.</p>
+						<a href="#" class="btn-custom">Continue <span class="fa fa-long-arrow-right"></span></a>
+
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-6 d-flex align-items-stretch ">
+				<div class="blog-entry d-flex">
+					<a href="blog-single.html" class="block-20 img" style="background-image: url('images/image_2.jpg');">
+					</a>
+					<div class="text p-4 bg-light">
+						<div class="meta">
+							<p><span class="fa fa-calendar"></span> 23 April 2020</p>
+						</div>
+						<h3 class="heading mb-3"><a href="#">The Recipe from a Winemaker’s Restaurent</a></h3>
+						<p>A small river named Duden flows by their place and supplies it with the necessary regelialia.</p>
+						<a href="#" class="btn-custom">Continue <span class="fa fa-long-arrow-right"></span></a>
+
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-6 d-flex align-items-stretch ">
+				<div class="blog-entry d-flex">
+					<a href="blog-single.html" class="block-20 img" style="background-image: url('images/image_3.jpg');">
+					</a>
+					<div class="text p-4 bg-light">
+						<div class="meta">
+							<p><span class="fa fa-calendar"></span> 23 April 2020</p>
+						</div>
+						<h3 class="heading mb-3"><a href="#">The Recipe from a Winemaker’s Restaurent</a></h3>
+						<p>A small river named Duden flows by their place and supplies it with the necessary regelialia.</p>
+						<a href="#" class="btn-custom">Continue <span class="fa fa-long-arrow-right"></span></a>
+
+					</div>
+				</div>
+			</div>
+			<div class="col-lg-6 d-flex align-items-stretch ">
+				<div class="blog-entry d-flex">
+					<a href="blog-single.html" class="block-20 img" style="background-image: url('images/image_4.jpg');">
+					</a>
+					<div class="text p-4 bg-light">
+						<div class="meta">
+							<p><span class="fa fa-calendar"></span> 23 April 2020</p>
+						</div>
+						<h3 class="heading mb-3"><a href="#">The Recipe from a Winemaker’s Restaurent</a></h3>
+						<p>A small river named Duden flows by their place and supplies it with the necessary regelialia.</p>
+						<a href="#" class="btn-custom">Continue <span class="fa fa-long-arrow-right"></span></a>
+
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	}
+
+</article>
+
+@code {
+	bool loading;
+	string Search = "";
+	List<string> sortOrder = new List<string>() { "increasing", "down" };
+	string SelectedString = "def";
+
+	protected async void PagerPageChanged(int page)
+	{
+		await ProductService.PagerPageChanged(page);
+		StateHasChanged();
+	}
+
+	async Task PageSearch(string Search)
+	{
+		await ProductService.PagerPageChanged(ProductService.PagedProducts.CurrentPage, SelectedString, Search);
+		this.Search = "";
+		StateHasChanged();
+	}
+
+	private async void SelectionChanged(ChangeEventArgs args)
+	{
+		SelectedString = args.Value.ToString();
+		await ProductService.PagerPageChanged(ProductService.PagedProducts.CurrentPage, SelectedString);
+		StateHasChanged();
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+		loading = true;
+		await ProductService.GetPageSize();
+		ProductService.PagedProducts.CurrentPage = 1;
+		await ProductService.PagerPageChanged(ProductService.PagedProducts.CurrentPage);
+		//var a = ProductService.PagedProducts.Results;
+		//await ProductService.GetAllProducts();
+		loading = false;
+	}
+}

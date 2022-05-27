@@ -1,0 +1,97 @@
+﻿@page "/AllProduct"
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Entities
+@inject IProductService ProductService
+
+<ForAnother />
+
+<article class="container">
+	<div class="form-group row mt-4 col-12">
+		<div class="col-1" />
+		<div class="form-inline col-7">
+			<select id="sortOrder" @onchange="SelectionChanged" class="form-control">
+				<option value="">Select Sort</option>
+				@foreach (var value in sortOrder)
+				{
+					<option value="@value">@value</option>
+				}
+			</select>
+		</div>
+		<div>
+			<EditForm Model="Search" class="form-inline mt-2">
+				<InputText @bind-Value="Search" class="form-control mr-sm-2" placeholder="ara" />
+				<button @onclick="(()=>PageSearch(Search))" class="form-control btn btn-outline-success btn-lg">ara</button>
+			</EditForm>
+		</div>
+	</div>
+	@if (ProductService.PagedProducts.Results.Count > 0)
+	{
+		<section style="margin-bottom:120px;">
+			<div class="container" style="margin-left:10px;">
+				<div class="row">
+					@if (ProductService.PagedProducts.Results != null)
+					{
+						@foreach (var item in ProductService.PagedProducts.Results)
+						{
+							@if (item != null)
+							{
+								<ProductCardView product=item />
+							}
+						}
+					}
+				</div>
+			</div>
+		</section>
+		<Pager Result=@ProductService.PagedProducts PageChanged=@PagerPageChanged />
+	}
+	@if (loading)
+	{
+		<div class="d-flex flex-row" style="min-width: 18rem; max-width:30.5%;">
+			<span class="spinner-border spinner-border-lg align-center"></span>
+		</div>
+	}
+</article>
+
+@code {
+	bool loading;
+	string Search = "";
+	IList<Product> items = new List<Product>();
+	List<string> sortOrder = new List<string>() { "increasing", "down" };
+	string SelectedString = "def";
+
+	protected async void PagerPageChanged(int page)
+	{
+		await ProductService.PagerPageChanged(page);
+		StateHasChanged();
+	}
+
+	protected async void PageSearch(string Search)
+	{
+		await ProductService.PagerPageChanged(ProductService.PagedProducts.CurrentPage, SelectedString, Search);
+		this.Search = "";
+		StateHasChanged();
+	}
+
+	private async void SelectionChanged(ChangeEventArgs args)
+	{
+		SelectedString = args.Value.ToString();
+		await ProductService.PagerPageChanged(ProductService.PagedProducts.CurrentPage, SelectedString);
+		StateHasChanged();
+	}
+
+	protected override async Task OnInitializedAsync()
+	{
+
+		loading = true;
+		await ProductService.GetPageSize();
+		ProductService.PagedProducts.CurrentPage = 1;
+		await ProductService.PagerPageChanged(ProductService.PagedProducts.CurrentPage);
+		items = ProductService.PagedProducts.Results;
+
+		//var a = ProductService.PagedProducts.Results;
+		//await ProductService.GetAllProducts();
+		loading = false;
+		StateHasChanged();
+
+	}
+}

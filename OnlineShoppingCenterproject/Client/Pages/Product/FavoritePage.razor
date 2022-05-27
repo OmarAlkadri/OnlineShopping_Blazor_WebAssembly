@@ -1,0 +1,57 @@
+﻿@using OnlineShoppingCenterproject.Client.Features
+@using OnlineShoppingCenterproject.Core.Dto.FavoriteForProductsDto
+@using OnlineShoppingCenterproject.Core.Entities
+@using System.Security.Claims
+
+@page "/FavoritePage"
+
+<ForAnother />
+<article class="container">
+
+	@if (product.Count > 0)
+	{
+		<section style="margin-bottom:120px; margin-top: 50px;">
+			<div class="container" style="margin-left:10px;">
+				<div class="row">
+					@foreach (var item in product)
+					{
+						@if (item != null)
+						{
+							<ProductCardView product=item.Product />
+						}
+					}
+				</div>
+			</div>
+		</section>
+	}
+	@if (loading)
+	{
+		<div class="d-flex flex-row" style="min-width: 18rem; max-width:30.5%;">
+			<span class="spinner-border spinner-border-lg align-center"></span>
+		</div>
+	}
+</article>
+
+@code {
+	bool loading;
+	private List<FavoriteForProduct> product = new List<FavoriteForProduct>();
+
+	protected override async Task OnInitializedAsync()
+	{
+		string userName;
+		var token = await _localStorage.GetItemAsStringAsync("authToken");
+		var UserName = JwtParser.ParseClaimsFromJwt(token);
+		userName = UserName.First(x => x.Type == ClaimTypes.Name).Value;
+		var aa = UserName.First(x => x.Type == ClaimTypes.Role).Value;
+		if (aa != null && aa == "Castomer")
+		{
+			loading = true;
+			product = await Http.GetFromJsonAsync<List<FavoriteForProduct>>($"api/FavoriteForProduct/GetAllFavorite/{userName}");
+			//var a = ProductService.PagedProducts.Results;
+			//await ProductService.GetAllProducts();
+			loading = false;
+			StateHasChanged();
+		}
+
+	}
+}

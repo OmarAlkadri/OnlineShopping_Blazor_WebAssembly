@@ -1,0 +1,54 @@
+@using OnlineShoppingCenterproject.Client.Services
+@*@using OnlineShoppingCenterproject.Client.Pages.Product
+	@inherits PagerModel*@
+
+@if (Result != null)
+{
+	<div class="row">
+		<div class="col-md-8" style="margin-top: -100px; margin-left: -90px;">
+			@if (Result.PageCount > 1)
+			{
+				<ul class="pagination pull-right">
+					<li><button onclick="@(() => PagerButtonClicked(1))" class="btn">&laquo;</button></li>
+					@for (var i = StartIndex; i <= FinishIndex; i++)
+					{
+						var currentIndex = i;
+						@if (i == Result.CurrentPage)
+						{
+							<li><span class="btn">@i</span></li>
+						}
+						else
+						{
+							<li><button onclick="@(() => PagerButtonClicked(currentIndex))" class="btn">@i</button></li>
+						}
+					}
+					<li><button onclick="@(() => PagerButtonClicked(Result.PageCount))" class="btn">&raquo;</button></li>
+				</ul>
+			}
+		</div>
+	</div>
+}
+
+@code {
+	[Parameter]
+	public PagedResultBase Result { get; set; }
+
+	[Parameter]
+	public Action<int> PageChanged { get; set; }
+
+	public int StartIndex { get; private set; } = 0;
+	public int FinishIndex { get; private set; } = 0;
+
+	protected override async Task OnInitializedAsync()
+	{
+		StartIndex = Math.Max(Result.CurrentPage - 2, 1);
+		FinishIndex = Math.Max(Result.CurrentPage + 2, Result.PageCount);
+		base.OnParametersSet();
+	}
+
+	public void PagerButtonClicked(int page)
+	{
+		Result.CurrentPage = page;
+		PageChanged?.Invoke(page);
+	}
+}

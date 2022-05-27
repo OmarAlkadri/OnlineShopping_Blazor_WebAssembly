@@ -1,0 +1,12 @@
+﻿@page "/logout"
+@using OnlineShoppingCenterproject.Client.Services
+
+@code {
+	[Inject]
+	IAuthenticationService AuthenticationService { get; set; }
+	protected override async Task OnInitializedAsync()
+	{
+		await AuthenticationService.Logout();
+		NavigationManager.NavigateTo("/");
+	}
+}

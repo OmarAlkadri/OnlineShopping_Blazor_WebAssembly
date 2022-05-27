@@ -1,0 +1,101 @@
+﻿<h3>AddAddressComponent</h3>
+@page "/AddAddress/{userName}"
+@using OnlineShoppingCenterproject.Core.Dto.AddresssDto
+@using OnlineShoppingCenterproject.Core.Dto.CastomersDto
+@using OnlineShoppingCenterproject.Core.Entities
+<ForAnother />
+<article class="container">
+	<section class="ftco-section">
+		<div class="container">
+			<div class="row justify-content-center">
+				<div class="col-xl-10  ">
+					<form action="#" class="billing-form">
+						<h3 class="mb-4 billing-heading">Adress Details</h3>
+						<div class="row align-items-end">
+							<div class="col-md-6">
+								<div class="form-group">
+									<label for="firstname">Title</label>
+									<input type="text" class="form-control" @bind-value="newAddress.Address.Title" placeholder="">
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="form-group">
+									<label for="lastname">Phone</label>
+									<input type="text" class="form-control" @bind-value="newAddress.Address.Phone" placeholder="">
+								</div>
+							</div>
+							<div class="w-100"></div>
+							<div class="col-md-12">
+								<div class="form-group">
+									<label for="country">State / Country</label>
+									<div class="select-wrap">
+										<div class="icon"><span class="ion-ios-arrow-down"></span></div>
+										<select name="" id="" class="form-control">
+											<option value="">Trkiye</option>
+										</select>
+									</div>
+								</div>
+							</div>
+							<div class="w-100"></div>
+							<div class="col-md-6">
+								<div class="form-group">
+									<label for="streetaddress">City</label>
+									<input type="text" class="form-control" @bind-value="newAddress.Address.City" placeholder="House number and street name">
+								</div>
+							</div>
+							<div class="col-md-6">
+								<div class="form-group">
+									<label for="streetaddress">District</label>
+									<input type="text" class="form-control" @bind-value="newAddress.Address.District" placeholder="Appartment, suite, unit etc: (optional)">
+								</div>
+							</div>
+							<div class="w-100"></div>
+							<div class="col-md-6">
+								<div class="form-group">
+									<label for="towncity">Neighborhood</label>
+									<input type="text" class="form-control" @bind-value="newAddress.Address.Neighborhood" placeholder="">
+								</div>
+							</div>
+ 
+							@*<div class="w-100"></div>
+							<div class="col-md-12">
+								<div class="form-group mt-4">
+									<div class="radio">
+										<label class="mr-3"><input type="radio" name="optradio"> Create an Account? </label>
+										<label><input type="radio" name="optradio"> Ship to different address</label>
+									</div>
+								</div>
+							</div>*@
+							<p><a @onclick="HandleValidSubmit" class="btn btn-primary py-3 px-4">Place an order</a></p>
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</section>
+</article>
+
+@code
+{
+	[Parameter]
+	public string userName { get; set; }
+	CastomerAddressForCreationDto newAddress = new CastomerAddressForCreationDto();
+	private EditContext editContext;
+	protected override void OnInitialized()
+	{
+		newAddress.Address = new AddressForCreationDto();
+		editContext = new EditContext(newAddress);
+	}
+	private async void HandleValidSubmit()
+	{
+		newAddress.Title = newAddress.Address.Title;
+		newAddress.UserName = userName;
+
+		await Http.PostAsJsonAsync("api/CastomerAddress", newAddress);
+		NavigationManager.NavigateTo("Checkout");
+	}
+	private void HandleReset()
+	{
+		editContext = new EditContext(newAddress);
+	}
+}

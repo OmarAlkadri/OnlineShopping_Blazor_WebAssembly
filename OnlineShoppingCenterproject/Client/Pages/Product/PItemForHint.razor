@@ -1,0 +1,46 @@
+﻿@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Entities
+@inject ICartService CartService
+@inject ProductCountState productCountState
+@inject IProductService ProductService
+
+<div class="col-3">
+	<div class="card" style="width: 12rem;">
+		<img src="/images/@product.Foto" class="d-block w-100" alt="...">
+		<div class="card-body">
+			<h5 class="card-title">@product.Name</h5>
+			<p class="card-text">@product.Title</p>
+			<button @onclick="addProductForBasket" class="btn btn-primary">add</button>
+		</div>
+	</div>
+</div>
+
+@code {
+	[Parameter]
+	public Product product { get; set; } = new Product();
+	private Boolean IsClick = false;
+	private List<CartItems> cartItems = new List<CartItems>();
+
+	private async Task addProductForBasket()
+	{
+		IsClick = true;
+		StateHasChanged();
+		CartItems cart = cartItems.FirstOrDefault(x => x.ProductId == product.Id);
+		if (cart == null)
+		{
+			cart = new CartItems();
+			cart.Price = product.UnitPrice;
+			cart.Product = product;
+			cart.ProductId = product.Id;
+			cart.Quantity = 1;
+			await CartService.AddToCart(cart);
+		}
+		else
+		{
+			cart.Quantity++;
+			await CartService.UpdateItem(cart);
+		}
+		IsClick = false;
+		StateHasChanged();
+	}
+}

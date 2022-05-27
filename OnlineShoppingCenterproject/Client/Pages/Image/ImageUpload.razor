@@ -1,0 +1,39 @@
+﻿@using OnlineShoppingCenterproject.Client.Services
+@using System.Net.Http.Headers
+<InputFile OnChange="HandleSelected" multiple/>
+
+@if (ImgUrl != null)
+{
+    <div>
+        <img src="/images/@ImgUrl" style="width:300px" />
+    </div>
+}
+@code{
+    [Parameter]
+    public string ImgUrl { get; set; }
+    [Parameter]
+    public EventCallback<string> OnChange { get; set; }
+    [Inject]
+    public IProductService Repository { get; set; }
+    
+    public async Task HandleSelected(InputFileChangeEventArgs e)
+	{
+            var imageFiles = e.GetMultipleFiles();
+            foreach (var imageFile in imageFiles)
+            {
+                if (imageFile != null)
+                {
+                    var resizedFile = await imageFile.RequestImageFileAsync("image/png", 300, 500);
+
+                    using (var ms = resizedFile.OpenReadStream(resizedFile.Size))
+                    {
+                        var content = new MultipartFormDataContent();
+                        content.Headers.ContentDisposition = new ContentDispositionHeaderValue("form-data");
+                        content.Add(new StreamContent(ms, Convert.ToInt32(resizedFile.Size)), "image", imageFile.Name);
+                        ImgUrl = await Repository.UploadProductImage(content);
+                        await OnChange.InvokeAsync(ImgUrl);
+                    }
+                }
+            }
+        }
+}

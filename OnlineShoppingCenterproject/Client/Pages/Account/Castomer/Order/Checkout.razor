@@ -1,0 +1,140 @@
+﻿@page "/Checkout"
+@using OnlineShoppingCenterproject.Client.Features
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Dto.AddresssDto
+@using System.Security.Claims
+@using OnlineShoppingCenterproject.Core.Dto.CastomersDto
+@using OnlineShoppingCenterproject.Core.Dto.OrdersDto
+@inject ICartService CartService
+
+<ForAnother />
+<article class="container">
+	<section class="ftco-section">
+		<div class="container">
+			<div class="row justify-content-center">
+				<div class="col-xl-10">
+					<div class="row">
+						<div class="col-6">
+							<EditForm Model="Adress">
+								<InputSelect @bind-Value="AddressId">
+									<option>select adress</option>
+									@foreach (var adress in Adress)
+									{
+										<option value="@adress.Address.Id">@adress.Address.Title</option>
+									}
+								</InputSelect>
+							</EditForm>
+						</div>
+						<div class="col-6 text-right">
+							<p>
+								<a @onclick="GoToAddAdress" class="btn btn-primary py-3 px-4">Place an order</a>
+							</p>
+
+						</div>
+					</div>
+					<div class="row mt-5 pt-3 d-flex">
+						<div class="col-md-6 d-flex">
+							<div class="cart-detail cart-total p-3 p-md-4">
+								<h3 class="billing-heading mb-4">Cart Total</h3>
+								<p class="d-flex">
+									<span>Kargo</span>
+									<span>10 TL</span>
+								</p>
+								<p class="d-flex">
+									<span>İndirim</span>
+									<span>100 TL</span>
+								</p>
+								<hr>
+								<p class="d-flex total-price">
+									<span>Toplam :</span>
+									<span>@CartItems.Sum(item => item.Price * item.Quantity) TL</span>
+								</p>
+							</div>
+						</div>
+						<div class="col-md-6">
+							<div class="cart-detail p-3 p-md-4">
+								<h3 class="billing-heading mb-4">Payment Method</h3>
+								<div class="form-group">
+									<input type="radio" id="BankTranfer" name="fav_language" value="BankTranfer">
+									<label for="BankTranfer">Direct Bank Tranfer</label><br>
+									<input type="radio" id="Payment" name="fav_language" value="Payment">
+									<label for="Payment">Check Payment</label><br>
+									<input type="radio" id="Paypal" name="fav_language" value="Paypal">
+									<label for="Paypal">Paypal</label>
+								</div>
+								<div class="form-group">
+									<div class="col-md-12">
+										<div>
+											<label><input type="checkbox" value="" class="mr-2"> I have read and accept the terms and conditions</label>
+										</div>
+									</div>
+								</div>
+								<button @onclick="AddOrder" disabled="@newOrder.IsClick"
+										class="btn btn-success">
+									@if (newOrder.IsClick)
+									{
+										<span class="spinner-border spinner-border-sm"></span>
+									}
+									else
+									{
+										<span>Tamamla</span>
+									}
+								</button>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+</article>
+
+@code {
+	public string userName { get; set; }
+	private List<CastomerAddressDto> Adress = new List<CastomerAddressDto>();
+	private OrderItemsList newOrder = new OrderItemsList();
+	Guid AddressId;
+	private List<CartItems> CartItems = new List<CartItems>();
+
+	public void GoToAddAdress() => NavigationManager.NavigateTo($"AddAddress/{userName}");
+	protected override async Task OnInitializedAsync()
+	{
+		CartItems = await CartService.GetCartItems();
+		newOrder.OrderItem = new List<OrderItemForCreationDto>();
+		var token = await _localStorage.GetItemAsStringAsync("authToken");
+		if (token != null)
+		{
+			var Id = JwtParser.ParseClaimsFromJwt(token);
+			userName = Id.First(x => x.Type == ClaimTypes.Name).Value;
+			Adress = await Http.GetFromJsonAsync<List<CastomerAddressDto>>($"api/CastomerAddress/GetAll/{userName}");
+		}
+		else
+		{
+			NavigationManager.NavigateTo("login");
+		}
+	}
+	async Task AddOrder()
+	{
+		newOrder.IsClick = true;
+		StateHasChanged();
+		newOrder.UserName = userName;
+		newOrder.AddressId = AddressId;
+		OrderItemForCreationDto Item = new OrderItemForCreationDto();
+
+		@foreach (var item in CartItems)
+		{
+			Item = new OrderItemForCreationDto();
+			Item.Price = item.Price * item.Quantity;
+			Item.ProductId = item.ProductId;
+			Item.Quantity = item.Quantity;
+			newOrder.OrderItem.Add(Item);
+		}
+
+		await Http.PostAsJsonAsync("api/OrderItem", newOrder);
+		CartService.EmptyCart();
+		newOrder.IsClick = false;
+		StateHasChanged();
+		NavigationManager.NavigateTo("OrderCompleted");
+	}
+
+}

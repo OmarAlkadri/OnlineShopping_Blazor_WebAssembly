@@ -1,0 +1,124 @@
+﻿@using OnlineShoppingCenterproject.Client.Features
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Entities
+@using System.Security.Claims
+@inject ICartService CartService
+@inject ProductCountState productCountState
+@inject IToastService toastService
+
+<div class="col-md-3 d-flex">
+	<div class="product ">
+		<div class="img d-flex align-items-center justify-content-center"
+			 style="background-image: url(/images/@product.Foto);">
+			<div class="desc">
+				<p class="meta-prod d-flex">
+					<a @onclick="addProductForBasket" class="d-flex align-items-center justify-content-center">
+						<span class="flaticon-shopping-bag"></span>
+					</a>
+
+					@if (IsClickF)
+					{
+						<a @onclick="AddFavorite" class="d-flex align-items-center justify-content-center">
+							<span class="flaticon-heart"></span>
+						</a>
+					}
+					else
+					{
+						<a @onclick="RemoveFavorite" class="d-flex align-items-center justify-content-center">
+							<span class="flaticon-heart"></span>
+						</a>
+
+					}
+					<a href="@($"ProductItem/{product.Id}")" class="d-flex align-items-center justify-content-center">
+						<span class="flaticon-visibility"></span>
+					</a>
+				</p>
+			</div>
+		</div>
+		<div class="text text-center" style="margin-bottom:20px;">
+			<span class="new">New Arrival</span>
+			<span class="category">@product.CompanyName</span>
+			<h2>@product.Name</h2>
+			<p class="mb-0">
+				<span class="price price-sale">@(product.UnitPrice+100) TL</span> <span class="price">@product.UnitPrice TL</span>
+			</p>
+		</div>
+	</div>
+</div>
+@code {
+	[Parameter]
+	public Product product { get; set; } = new Product();
+ 	private Boolean IsClick = false;
+	private List<CartItems> cartItems = new List<CartItems>();
+	private string userName;
+	private Boolean IsClickF = true;
+	protected override async Task OnInitializedAsync()
+	{
+ 		IsClickF = await Http.GetFromJsonAsync<Boolean>($"api/FavoriteForProduct/GetBool/{product.Id}");
+		var token = await _localStorage.GetItemAsStringAsync("authToken");
+		if (token != null)
+		{
+			var UserName = JwtParser.ParseClaimsFromJwt(token);
+			userName = UserName.First(x => x.Type == ClaimTypes.Name).Value;
+		}
+		else
+			userName = null;
+
+	}
+	async Task AddFavorite()
+	{
+		if (userName != null)
+		{
+			IsClickF = false;
+			StateHasChanged();
+			var a = $"api/FavoriteForProduct/AddFavorite/{product.Id}/{userName}";
+			await Http.GetFromJsonAsync<Boolean>(a);
+			StateHasChanged();
+			toastService.ShowSuccess($"{product.Id}", "Add to Favorite");
+		}
+		else
+		{
+			NavigationManager.NavigateTo("login");
+		}
+	}
+	async Task RemoveFavorite()
+	{
+		IsClickF = true;
+		StateHasChanged();
+		await Http.DeleteAsync($"api/FavoriteForProduct/{product.Id}");
+		toastService.ShowSuccess($"{product.Id}", "Cleared from Favourites");
+		StateHasChanged();
+	}
+	private async Task addProductForBasket()
+	{
+		IsClick = true;
+		StateHasChanged();
+		CartItems cart = cartItems.FirstOrDefault(x => x.ProductId == product.Id);
+		if (cart == null)
+		{
+			cart = new CartItems();
+			cart.Price = product.UnitPrice;
+			cart.Product = product;
+			cart.ProductId = product.Id;
+			cart.Quantity = 1;
+			await CartService.AddToCart(cart);
+		}
+		else
+		{
+			cart.Quantity++;
+			await CartService.UpdateItem(cart);
+		}
+
+		IsClick = false;
+
+		await ProductSelected();
+		StateHasChanged();
+	}
+
+	private async Task ProductSelected()
+	{
+		var items = await _localStorage.GetItemAsync<List<CartItems>>("cart");
+		var count = items != null ? items.Count : 0;
+		productCountState.SetProductCount(count);
+	}
+}

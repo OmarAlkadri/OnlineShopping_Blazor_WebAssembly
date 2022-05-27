@@ -1,0 +1,20 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="11.0.0" />
+    <PackageReference Include="Microsoft.JSInterop" Version="6.0.4" />
+    <PackageReference Include="PagedList.Mvc" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OnlineShoppingCenterproject.Core\OnlineShoppingCenterproject.Core.csproj" />
+    <ProjectReference Include="..\OnlineShoppingCenterproject.Data_DB\OnlineShoppingCenterproject.Data_DB.csproj" />
+  </ItemGroup>
+
+</Project>

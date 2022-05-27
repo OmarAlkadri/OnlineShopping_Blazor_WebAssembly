@@ -1,0 +1,201 @@
+﻿@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Dto.OrdersDto
+@using Blazored.Toast.Configuration
+@using System.Security.Claims
+@inject ICartService CartService
+@inject ProductCountState productCountState
+@implements IDisposable
+@inject ISyncLocalStorageService LocalStorage
+
+<div class="wrap">
+	<div class="container">
+		<div class="row">
+			<div class="col-md-6 d-flex align-items-center">
+				<p class="mb-0 phone pl-md-2">
+					<a href="#" class="mr-2"><span class="fa fa-phone mr-1"></span> +90 5xx xxx xx xx</a>
+					<a href="#"><span class="fa fa-paper-plane mr-1"></span> youremail@email.com</a>
+				</p>
+			</div>
+			<div class="col-md-6 d-flex justify-content-md-end">
+				<div class="social-media mr-4">
+					<p class="mb-0 d-flex">
+						<a href="https://www.facebook.com/" class="d-flex align-items-center justify-content-center"><span class="fa fa-facebook"><i class="sr-only">Facebook</i></span></a>
+						<a href="https://twitter.com/" class="d-flex align-items-center justify-content-center"><span class="fa fa-twitter"><i class="sr-only">Twitter</i></span></a>
+						<a href="https://www.instagram.com/" class="d-flex align-items-center justify-content-center"><span class="fa fa-instagram"><i class="sr-only">Instagram</i></span></a>
+						@*<a href="#" class="d-flex align-items-center justify-content-center"><span class="fa fa-dribbble"><i class="sr-only">Dribbble</i></span></a>*@
+					</p>
+				</div>
+				<div class="reg">
+					<p class="mb-0">
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<nav class="navbar navbar-expand-lg navbar-dark ftco_navbar bg-dark ftco-navbar-light" id="ftco-navbar">
+	<div class="container">
+		<a class="navbar-brand" href="\">EksikYokFazlaVar <span>Store</span></a>
+		<div class="order-lg-last btn-group">
+			@if (items != null)
+			{
+				<a href="#" class="btn-cart dropdown-toggle dropdown-toggle-split"
+			   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					<img src="images/shopping-cart.png" width="35" height="35" />
+					<div class="d-flex justify-content-center align-items-center">
+						<small>@GetProductCount()</small>
+						@*<small>@(async () => {return await  GetProductCount();})</small>*@
+					</div>
+				</a>
+				<div class="dropdown-menu dropdown-menu-right">
+
+					@if (items != null)
+					{
+
+						@for (var i = 0; i < items.Count; i++)
+						{
+							@if (i <= 5)
+							{
+
+								var item = items[i];
+								<div class="dropdown-item d-flex align-items-start" href="#">
+									<div class="img" style="background-image: url(/images/@item.Product.Foto);"></div>
+									<div class="text pl-3">
+										<h4>@item.Product.Name</h4>
+										<p class="mb-0"><a href="#" class="price">@(item.Product.UnitPrice * item.Quantity)</a><span class="quantity ml-3">Quantity: @item.Quantity</span></p>
+									</div>
+								</div>
+							}
+							else
+							{
+								break;
+							}
+						}
+					}
+					<a class="dropdown-item text-center btn-link d-block w-100" href="Basket">
+						View All
+						<span class="ion-ios-arrow-round-forward"></span>
+					</a>
+				</div>
+			}
+			else
+			{
+				<a href="#" class="btn-cart dropdown-toggle dropdown-toggle-split"
+			   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+					<img src="images/shopping-cart.png" width="35" height="35" />
+					<div class="d-flex justify-content-center align-items-center"><small>0</small></div>
+				</a>
+				<div class="dropdown-menu dropdown-menu-right">
+
+					<a class="dropdown-item text-center btn-link d-block w-100" href="Basket">
+						View All
+						<span class="ion-ios-arrow-round-forward"></span>
+					</a>
+				</div>
+			}
+		</div>
+		<button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#ftco-nav" aria-controls="ftco-nav" aria-expanded="false" aria-label="Toggle navigation">
+			<span class="oi oi-menu"></span> Menu
+		</button>
+		<div class="collapse navbar-collapse" id="ftco-nav">
+			<ul class="navbar-nav ml-auto">
+				<AuthorizeView Roles="Castomer">
+					<Authorized>
+						<li class="nav-item active"><a href="AllProduct" class="nav-link">Home</a></li>
+					</Authorized>
+				</AuthorizeView>
+				<li class="nav-item"><a href="About" class="nav-link">About</a></li>
+				@*<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle" href="#" id="dropdown04" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Products</a>
+					<div class="dropdown-menu" aria-labelledby="dropdown04">
+					<a class="dropdown-item" href="product.html">Products</a>
+					<a class="dropdown-item" href="product-single.html">Single Product</a>
+					</div>
+					</li>*@
+				<li class="nav-item"><a href="Contact" class="nav-link">Contact</a></li>
+				<li class="nav-item dropdown">
+					<a class="nav-link dropdown-toggle" href="#" id="Account"
+					   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Account</a>
+					<div class="dropdown-menu" aria-labelledby="Account">
+						<AuthorizeView>
+							<Authorized>
+								<p class="dropdown-item">Hello, @context.User.Identity.Name</p>
+								<a class="dropdown-item" href="logout">Log out </a>
+							</Authorized>
+							<NotAuthorized>
+								<a class="dropdown-item" href="RegistrationCastomer">Register</a>
+								<a class="dropdown-item" href="registrationAdmin">Register For Admin</a>
+								<a class="dropdown-item" href="RegistrationCompany">Register For Company</a>
+								@*<a href="registrationAdmin">Abone Ol</a>*@
+								<a class="dropdown-item" href="login">Log in</a>
+							</NotAuthorized>
+						</AuthorizeView>
+						<AuthorizeView Roles="Castomer">
+							<Authorized>
+								<a class="dropdown-item" href="FavoritePage">FavoritePage</a>
+								<a class="dropdown-item" href="myOrder">myOrder</a>
+								<a class="dropdown-item" href="editCastomer/@context.User.Identity.Name">Edit Castomer</a>
+								<a class="dropdown-item" href="Basket">Cart</a>
+							</Authorized>
+						</AuthorizeView>
+						<AuthorizeView Roles="Admin">
+							<Authorized>
+								<a class="dropdown-item" href="AddProductAdmin">Add Product</a>
+								<a class="dropdown-item" href="AdminHome">Admin Home</a>
+							</Authorized>
+						</AuthorizeView>
+						<AuthorizeView Roles="Company">
+							<Authorized>
+								<a class="dropdown-item" href="AddProductCompany">Add Product</a>
+								<a class="dropdown-item" href="@($"AllProductCompany/{context.User.Identity.Name}")">All Product</a>
+								<a class="dropdown-item" href="@($"Company/edit/{context.User.Identity.Name}")">Edit Company</a>
+							</Authorized>
+						</AuthorizeView>
+					</div>
+				</li>
+			</ul>
+		</div>
+	</div>
+</nav>
+
+@code
+{
+	private List<CartItems> items { get; set; } = new List<CartItems>();
+	//	AuthenticationState cona = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
+	protected override async Task OnInitializedAsync()
+	{
+		productCountState.onChange += StateHasChanged;
+
+		items = await _localStorage.GetItemAsync<List<CartItems>>("cart");
+	}
+	protected override void OnInitialized()
+	{
+		CartService.OnChange += StateHasChanged;
+	}
+
+	public void Dispose()
+	{
+		productCountState.onChange -= StateHasChanged;
+	}
+
+	public async Task UpdateProductCountFromStorage()
+	{
+		items = await _localStorage.GetItemAsync<List<CartItems>>("cart");
+	}
+
+	//public void SetProductCount(int count)
+	//{
+	//	prodCount = count;
+	//}
+
+	private int GetProductCount()
+	{
+		//return productCountState.Count;
+		//Task.Run(() => UpdateProductCountFromStorage()).GetAwaiter().GetResult();
+		//return items != null ? items.Count : 0;
+
+		items = LocalStorage.GetItem<List<CartItems>>("cart");
+		return items != null ? items.Count : 0;
+	}
+}

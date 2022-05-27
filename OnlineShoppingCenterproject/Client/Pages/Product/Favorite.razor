@@ -1,0 +1,72 @@
+﻿@using OnlineShoppingCenterproject.Client.Features
+@using System.Security.Claims
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Entities
+
+
+@if (IsClick)
+{
+	<div class="save" @onclick="(()=> AddFavorite(Id))"><u>Save for later</u></div>
+}
+else
+{
+	<div class="save" @onclick="(()=> RemoveFavorite(Id))"><u>delete</u></div>
+}
+
+@code {
+	[Parameter]
+	public Guid Id { get; set; } = new Guid();
+	private string userName;
+	private Boolean IsClick = true;
+
+	[Inject]
+	IAuthenticationService AuthenticationService { get; set; }
+
+
+
+	protected override async Task OnInitializedAsync()
+	{
+		IsClick = await Http.GetFromJsonAsync<Boolean>($"api/FavoriteForProduct/GetBool/{Id}");
+		var token = await _localStorage.GetItemAsStringAsync("authToken");
+		if (token!=null)
+		{
+
+			var UserName = JwtParser.ParseClaimsFromJwt(token);
+			userName = UserName.First(x => x.Type == ClaimTypes.Name).Value;
+		}
+		else
+		{
+			userName = null;
+		}
+	}
+	async Task AddFavorite(Guid Id)
+	{
+		if (userName != null)
+		{
+
+			IsClick = false;
+			StateHasChanged();
+			var a = $"api/FavoriteForProduct/AddFavorite/{Id}/{userName}";
+			await Http.GetFromJsonAsync<Boolean>(a);
+			/*var aa = await Http.GetFromJsonAsync<FavoriteForProduct>(a);
+			if (aa == null)
+				{
+				await AuthenticationService.Logout();
+				NavigationManager.NavigateTo("login");
+			}*/
+			StateHasChanged();
+		}
+		else
+		{
+			NavigationManager.NavigateTo("login");
+		}
+	}
+	async Task RemoveFavorite(Guid Id)
+	{
+		IsClick = true;
+		StateHasChanged();
+		await Http.DeleteAsync($"api/FavoriteForProduct/{Id}");
+		StateHasChanged();
+	}
+
+}

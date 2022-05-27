@@ -1,0 +1,140 @@
+﻿@page "/AllProductCompany/{UserName}"
+
+@using OnlineShoppingCenterproject.Client.Pages.Product
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Dto.CompanysDto
+@using OnlineShoppingCenterproject.Core.Dto.ProductCompanysDto
+@using OnlineShoppingCenterproject.Core.Entities
+@inject IProductService ProductService
+
+
+<ForAdminCompany />
+<article class="container">
+	<table class="table-striped" style="margin-top:20px;">
+		<thead>
+			<tr>
+				<th style="width: 10%">Name</th>
+				<th style="width: 10%">Company Name</th>
+				<th style="width: 15%">Type</th>
+				<th style="width: 10%">Model Number</th>
+				<th style="width: 10%">Warranty Company</th>
+				<th style="width: 10%">Quantity</th>
+				<th style="width: 50%">Title</th>
+				<th style="width: 30%">Foto</th>
+				<th>UnitPrice</th>
+
+			</tr>
+		</thead>
+		<tbody>
+			@if (loading)
+			{
+				<tr>
+					<td colspan="12" class="text-center">
+						<span class="spinner-border spinner-border-lg align-center"></span>
+					</td>
+				</tr>
+			}
+			@if (products != null)
+			{
+				foreach (var item in products)
+				{
+					<tr>
+						<td>@item.Name</td>
+						<td>@item.CompanyName</td>
+						<td>@item.Type</td>
+						<td>@item.ModelNumber</td>
+						<td>@item.WarrantyCompany</td>
+						<td>@item.Quantity</td>
+						<td>@item.Title</td>
+						<td>
+							<img src="/images/@item.Foto" alt="Alternate Text" style="width: 100px;" />
+						</td>
+						<td>@item.UnitPrice</td>
+						<td style="white-space: nowrap">
+							<NavLink href="@($"editProduct/{item.Id}")" class="btn btn-outline-dark mr-1">Edit</NavLink>
+							<button @onclick="@(() => DeleteProduct(item.Id))" disabled="@item.IsClick"
+							class="btn btn-sm btn-danger btn-delete-user">
+								@if (item.IsClick)
+								{
+									<span class="spinner-border spinner-border-sm"></span>
+								}
+								else
+								{
+									<span>Delete</span>
+								}
+							</button>
+						</td>
+					</tr>
+				}
+			}
+		</tbody>
+	</table>
+	<div style="margin-top:100px;">
+		<Pager Result=@ProductService.PagedProducts PageChanged=@PagerPageChangedForCompany />
+	</div>
+
+	<table class="table-striped" style="margin-bottom: 50px;">
+		<thead>
+			<tr>
+				<th style="width: 15%">Available Quantity</th>
+				<th style="width: 15%">Seller For 20</th>
+				<th style="width: 15%">Seller For 21</th>
+				<th style="width: 15%">Seller For 22</th>
+				<th style="width: 15%">Seller For All</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>@QuantityForAllProduct</td>
+				<td>@BestSellerFor20</td>
+				<td>@BestSellerFor21</td>
+				<td>@BestSellerFor22</td>
+				<td>@BestSellerAll</td>
+			</tr>
+		</tbody>
+	</table>
+</article>
+@code {
+	[Parameter]
+	public string UserName { get; set; }
+	bool loading;
+	bool showERP = false;
+	IList<ProductDto> products = new List<ProductDto>();
+
+	long QuantityForAllProduct = 0;
+	long BestSellerAll = 0;
+	long BestSellerFor20 = 0;
+	long BestSellerFor21 = 0;
+	long BestSellerFor22 = 0;
+
+	protected override async Task OnInitializedAsync()
+	{
+		loading = true;
+		PagerPageChangedForCompany(1);
+		//	products = await Http.GetFromJsonAsync<IList<ProductDto>>($"api/Product/AllProductForCompany/{UserName}");
+		QuantityForAllProduct = await Http.GetFromJsonAsync<long>($"api/ERP/QuantityForCompany/{UserName}");
+		BestSellerAll = await Http.GetFromJsonAsync<long>($"api/ERP/BestSellerForCompany/{UserName}");
+		BestSellerFor20 = await Http.GetFromJsonAsync<long>($"api/ERP/BestSellerYearForCompany/{UserName}/{2020}");
+		BestSellerFor21 = await Http.GetFromJsonAsync<long>($"api/ERP/BestSellerYearForCompany/{UserName}/{2021}");
+		BestSellerFor22 = await Http.GetFromJsonAsync<long>($"api/ERP/BestSellerYearForCompany/{UserName}/{2022}");
+		loading = false;
+		StateHasChanged();
+	}
+
+	protected async void PagerPageChangedForCompany(int page)
+	{
+		products = await ProductService.PagerPageChangedForCompany(page);
+		StateHasChanged();
+	}
+
+	private async void DeleteProduct(Guid Id)
+	{
+		var product = products.First(x => x.Id == Id);
+		product.IsClick = true;
+		StateHasChanged();
+		await Http.DeleteAsync($"api/Product/DeleteProduct/{product.Id}");
+		product.IsClick = false;
+		products.Remove(product);
+		StateHasChanged();
+	}
+}

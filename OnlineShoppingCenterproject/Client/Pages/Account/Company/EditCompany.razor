@@ -1,0 +1,91 @@
+﻿@page "/EditCompany/{UserName}"
+@using OnlineShoppingCenterproject.Core.Dto.CompanysDto
+
+
+<ForAdminCompany />
+<article class="container">
+
+@if (company != null)
+{
+	<EditForm Model="company" OnValidSubmit="Update">
+		<DataAnnotationsValidator />
+		<ValidationSummary />
+		<div class="body">
+			<div class="form-row">
+				<div class="form-group col">
+					<label>First Name</label>
+					<InputText @bind-Value="company.Name" class="form-control" />
+					<ValidationMessage For="@(() => company.Name)" />
+				</div>
+				<div class="form-group col">
+					<label>Last Name</label>
+					<InputText @bind-Value="company.LastName" class="form-control" />
+					<ValidationMessage For="@(() => company.LastName)" />
+				</div>
+			</div>
+			<div class="form-row">
+				<div class="form-group col">
+					<label>Company Type</label>
+					<InputText @bind-Value="company.CompanyType" class="form-control" />
+					<ValidationMessage For="@(() => company.CompanyType)" />
+				</div>
+				<div class="form-group col">
+					<label>starting Date</label>
+					<InputText @bind-Value="company.startingDate" class="form-control" />
+					<ValidationMessage For="@(() => company.startingDate)" />
+				</div>
+			</div>
+			<div class="form-row">
+				<div class="form-group col">
+					<label>Company Name</label>
+					<InputText @bind-Value="company.CompanyName" class="form-control" />
+					<ValidationMessage For="@(() => company.CompanyName)" />
+				</div>
+				<div class="form-group col">
+					<label>
+						Password
+					</label>
+					<InputText @bind-Value="company.Password" type="password" class="form-control" />
+					<ValidationMessage For="@(() => company.Password)" />
+				</div>
+			</div>
+			<div class="form-group">
+				<button disabled="@loading" class="btn btn-primary">
+					@if (loading)
+					{
+						<span class="spinner-border spinner-border-sm mr-1"></span>
+					}
+					Save
+				</button>
+				<NavLink href="users" class="btn btn-link">Cancel</NavLink>
+			</div>
+		</div>
+	</EditForm>
+}
+else
+{
+	<div class="text-center p-3">
+		<span class="spinner-border spinner-border-lg align-center"></span>
+	</div>
+}
+</article>
+@code {
+
+	public CompanyForUpdateDto company = new CompanyForUpdateDto();
+
+	protected override async Task OnInitializedAsync()
+	{
+		company = new CompanyForUpdateDto();
+	}
+
+	[Parameter]
+	public string UserName { get; set; }
+	public bool loading = false;
+
+	public async Task Update()
+	{
+		loading = true;
+		await Http.PutAsJsonAsync($"api/Company/UpdateCompany/{UserName}", company);
+		NavigationManager.NavigateTo("/");
+	}
+}

@@ -1,0 +1,161 @@
+﻿@using Blazored.LocalStorage
+@using OnlineShoppingCenterproject.Client.Features
+@using OnlineShoppingCenterproject.Client.Pages.Image
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Dto.CompanysDto
+@using OnlineShoppingCenterproject.Core.Dto.ProductCompanysDto
+@using System.Security.Claims
+@using System.Net.Http.Headers
+@inject IProductService ProductService
+
+@page "/AddProductAdmin"
+
+<ForAnother />
+<article class="container">
+    @if (ShowRegistrationErrors)
+    {
+        <div class="alert alert-danger" role="alert">
+            <p>@error</p>
+        </div>
+    }
+
+    <div class="form-group row">
+        <label for="gender" class="col-md-2 col-form-label">Company Name:</label>
+        <div class="col-md-10">
+            <EditForm Model="Companys">
+                <InputSelect id="gender" @bind-Value="Id" class="form-control">
+                    @foreach (var item in Companys)
+                    {
+                        <option value="@item.Id">@item.CompanyName</option>
+                    }
+                </InputSelect>
+            </EditForm>
+        </div>
+    </div>
+
+    <EditForm Model="newProduct" OnValidSubmit="(() =>HandleValidSubmit())" class="card card-body bg-light mt-5">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+        <div class="form-group row">
+            <label for="Name" class="col-md-2 col-form-label">Product Name:</label>
+            <div class="col-md-10">
+                <InputText type="text" id="Name" class="form-control" @bind-Value="newProduct.Name" />
+                <ValidationMessage For="@(() => newProduct.Name)" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="Name" class="col-md-2 col-form-label">Company Name:</label>
+            <div class="col-md-10">
+                <InputText type="text" id="Name" class="form-control" @bind-Value="newProduct.CompanyName" />
+                <ValidationMessage For="@(() => newProduct.CompanyName)" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="LastName" class="col-md-2 col-form-label">Title:</label>
+            <div class="col-md-10">
+                <InputText type="text" id="LastName" class="form-control" @bind-Value="newProduct.Title" />
+                <ValidationMessage For="@(() => newProduct.Title)" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="startingDate" class="col-md-2 col-form-label">Type:</label>
+            <div class="col-md-10">
+                <InputText type="text" id="startingDate" class="form-control" @bind-Value="newProduct.Type" />
+                <ValidationMessage For="@(() => newProduct.Type)" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="CompanyName" class="col-md-2 col-form-label">Model Number:</label>
+            <div class="col-md-10">
+                <InputText type="text" id="CompanyName" class="form-control" @bind-Value="newProduct.ModelNumber" />
+                <ValidationMessage For="@(() => newProduct.ModelNumber)" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="CompanyType" class="col-md-2 col-form-label">Warranty Company:</label>
+            <div class="col-md-10">
+                <InputText type="text" id="CompanyType" class="form-control" @bind-Value="newProduct.WarrantyCompany" />
+                <ValidationMessage For="@(() => newProduct.WarrantyCompany)" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="File" class="col-md-2 col-form-label">Foto:</label>
+            <div class="col-md-10">
+                <ImageUpload OnChange="AssignImageUrl" />
+                <ValidationMessage For="@(() => newProduct.Foto)" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="email" class="col-md-2 col-form-label">Unit Price:</label>
+            <div class="col-md-10">
+                <InputNumber id="email" class="form-control" @bind-Value="newProduct.UnitPrice" />
+                <ValidationMessage For="@(() => newProduct.UnitPrice)" />
+            </div>
+        </div>
+        <div class="form-group row">
+            <label for="password" class="col-md-2 col-form-label">Quantity:</label>
+            <div class="col-md-10">
+                <InputNumber type="password" id="password" class="form-control" @bind-Value="newProduct.Quantity" />
+                <ValidationMessage For="@(() => newProduct.Quantity)" />
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12 text-right">
+                <button type="submit" disabled="@newProduct.IsClick" class="btn btn-primary mr-1">
+                    @if (newProduct.IsClick)
+                    {
+                        <span class="spinner-border spinner-border-sm"></span>
+                    }
+                    else
+                    {
+                        <span>Add Product</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </EditForm>
+</article>
+
+@code {
+    ProductForCreationDto newProduct = new ProductForCreationDto();
+    IList<CompanyDto> Companys = new List<CompanyDto>();
+
+    private string userName;
+    public bool ShowRegistrationErrors { get; set; }
+    public string error { get; set; }
+
+
+    Guid Id = new Guid();
+
+    protected override async Task OnInitializedAsync()
+    {
+        Companys = await Http.GetFromJsonAsync<IList<CompanyDto>>("api/Company");
+        var token = await _localStorage.GetItemAsStringAsync("authToken");
+        var Id = JwtParser.ParseClaimsFromJwt(token);
+        userName = Id.First(x => x.Type == ClaimTypes.Name).Value;
+
+    }
+
+    private async void HandleValidSubmit()
+    {
+        var company = Companys.First(x => x.Id == Id);
+        ProductCompanyForCreationDto p = new ProductCompanyForCreationDto(newProduct);
+        newProduct.IsClick = true;
+        ShowRegistrationErrors = false;
+        StateHasChanged();
+        p.type = newProduct.Type;
+        p.CompanyId = company.Id;
+        p.activations = company.activations;
+
+        var a = await ProductService.AddProduct(p);
+        if (a.StatusCode != System.Net.HttpStatusCode.OK)
+        {
+            error = a.Content.ReadAsStringAsync().Result.ToString();
+            ShowRegistrationErrors = true;
+        }
+        newProduct.IsClick = false;
+        StateHasChanged();
+    }
+    private void AssignImageUrl(string imgUrl) => newProduct.Foto = imgUrl;
+
+}

@@ -1,0 +1,121 @@
+﻿@page "/registrationAdmin"
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Dto.UsersDto
+@using OnlineShoppingCenterproject.Models
+
+ <article class="container">
+
+@if (ShowRegistrationErrors)
+{
+	<div class="alert alert-danger" role="alert">
+		@foreach (var error in Errors)
+		{
+			<p>@error</p>
+		}
+	</div>
+}
+<EditForm Model="_userForRegistration" OnValidSubmit="Register" class="card card-body bg-light mt-5">
+	<DataAnnotationsValidator />
+	<div class="form-group row">
+		<label for="Name" class="col-md-2 col-form-label">Name:</label>
+		<div class="col-md-10">
+			<InputText type="text" id="Name" class="form-control" @bind-Value="_userForRegistration.Name" />
+			<ValidationMessage For="@(() => _userForRegistration.Name)" />
+		</div>
+	</div>
+	<div class="form-group row">
+		<label for="LastName" class="col-md-2 col-form-label">Last Name:</label>
+		<div class="col-md-10">
+			<InputText type="text" id="LastName" class="form-control" @bind-Value="_userForRegistration.LastName" />
+			<ValidationMessage For="@(() => _userForRegistration.LastName)" />
+		</div>
+	</div>
+	<div class="form-group row">
+		<label for="gender" class="col-md-2 col-form-label">Gender:</label>
+		<div class="col-md-10">
+			<InputSelect id="gender" @bind-Value="@_userForRegistration.Gender" class="form-control">
+				@foreach (var gender in Enum.GetValues(typeof(Gender)))
+				{
+					<option value="@gender">@gender</option>
+				}
+			</InputSelect>
+			<ValidationMessage For="@(() => _userForRegistration.Gender)" />
+		</div>
+	</div>
+	<div class="form-group row">
+		<label for="email" class="col-md-2 col-form-label">Email:</label>
+		<div class="col-md-10">
+			<InputText id="email" class="form-control" @bind-Value="_userForRegistration.Email" />
+			<ValidationMessage For="@(() => _userForRegistration.Email)" />
+		</div>
+	</div>
+	<div class="form-group row">
+		<label for="password" class="col-md-2 col-form-label">Password:</label>
+		<div class="col-md-10">
+			<InputText type="password" id="password" class="form-control" @bind-Value="_userForRegistration.Password" />
+			<ValidationMessage For="@(() => _userForRegistration.Password)" />
+		</div>
+	</div>
+	<div class="row">
+		<div class="col-md-12 text-right">
+			<button type="submit" disabled="@_userForRegistration.IsClick"
+					class="btn btn-success">
+				@if (_userForRegistration.IsClick)
+				{
+					<span class="spinner-border spinner-border-sm"></span>
+				}
+				else
+				{
+					<span>Register</span>
+				}
+			</button>
+		</div>
+	</div>
+</EditForm>
+ </article>
+
+@code {
+	UserForCreationDto _userForRegistration = new UserForCreationDto();
+	[Inject]
+	IAuthenticationService AuthenticationService { get; set; }
+	public Boolean ShowRegistrationErrors = false;
+	public IEnumerable<string> Errors { get; set; } = new List<string>();
+
+	bool ShowAuthError { get; set; }
+	string Error { get; set; }
+	public async Task Register()
+	{
+		_userForRegistration.IsClick = true;
+		ShowRegistrationErrors = false;
+		StateHasChanged();
+		if (_userForRegistration.Gender == null)
+		{
+			_userForRegistration.Gender = Gender.Male;
+		}
+		var result = await AuthenticationService.RegisterUser(_userForRegistration);
+		if (!result.IsSuccessfulRegistration)
+		{
+			Errors = result.Errors;
+			ShowRegistrationErrors = true;
+		}
+		else
+		{
+			Login log = new Login();
+			log.Email = _userForRegistration.Email;
+			log.Password = _userForRegistration.Password;
+			ShowAuthError = false;
+			var resultL = await AuthenticationService.Login(log);
+			if (!resultL.IsAuthSuccessful)
+			{
+				Error = resultL.ErrorMessage;
+				ShowAuthError = true;
+			}
+			else
+			{
+				NavigationManager.NavigateTo("/");
+			}
+		}
+		_userForRegistration.IsClick = false;
+		StateHasChanged();
+	}
+}

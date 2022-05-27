@@ -1,0 +1,137 @@
+﻿@page "/Basket"
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Entities
+@inject ICartService CartService
+@inject IProductService ProductService
+
+<ForAnother />
+<article class="container">
+	@if (!orderPlaced)
+	{
+		@if (cartItems == null || cartItems.Count <= 0)
+		{
+			<div class="body">
+				<div class="Header">
+					<h3 class="Heading">You have no items in your cart.</h3>
+				</div>
+			</div>
+		}
+		else
+		{
+			<div class="body" style="margin-bottom:50px;">
+				<div class="CartContainer">
+					<div class="Header">
+						<h3 class="Heading">Shopping Cart</h3>
+						<h5 class="Action" @onclick="CartClear">Remove all</h5>
+					</div>
+					@foreach (var item in cartItems)
+					{
+						<div class="Cart-Items">
+							<div class="image-box">
+								<img src="/images/@item.Product.Foto" class="Foto" />
+							</div>
+							<div class="about">
+								<h1 class="title">@item.Product.Name</h1>
+								<h3 class="subtitle">250ml</h3>
+								<img src="/favoriteB.png" class="favoriteB" />
+							</div>
+							<div class="counter">
+								<div class="btn" @onclick="(() => IncreaseQuantity(item))">+</div>
+								<div class="count">@item.Quantity</div>
+								<div class="btn" @onclick="(() => decreaseQuantity(item))">-</div>
+							</div>
+							<div class="prices">
+								<div class="amount">@(item.Price * item.Quantity) TL</div>
+								<Favorite Id=item.ProductId />
+								<div class="remove" @onclick="(() => DeleteItem(item))"><u>Remove</u></div>
+							</div>
+						</div>
+						<hr>
+					}
+					<div class="checkout">
+						<div class="total">
+							<div>
+								<div class="Subtotal">Sub-Total</div>
+								<div class="items">@cartItems.Count items</div>
+								<div class="total-amount">@cartItems.Sum(item => item.Price * item.Quantity)</div>
+							</div>
+						</div>
+						<button @onclick="Checkout" class="button">Checkout</button>
+					</div>
+				</div>
+			</div>
+			@if (product != null)
+			{
+				<div class="row" style="margin-bottom:50px;">
+					<div class="col-2" style="margin-left:-50px;"></div>
+					@foreach (var item in product)
+					{
+						<PItemForHint product=item />
+					}
+				</div>
+			}
+		}
+	}
+	else
+	{
+		<div class="body">
+
+			<h3>Thank you for your order!</h3>
+			<h4>Here's what you'll get:</h4>
+		</div>
+
+	}
+</article>
+
+@code {
+	List<CartItems> cartItems = new List<CartItems>();
+	bool orderPlaced = false;
+	public List<Product> product { get; set; } = new List<Product>();
+
+
+	async Task IncreaseQuantity(CartItems Item)
+	{
+		Item.Quantity++;
+		StateHasChanged();
+		await CartService.UpdateItem(Item);
+	}
+	async Task decreaseQuantity(CartItems Item)
+	{
+		Item.Quantity--;
+		StateHasChanged();
+		if (Item.Quantity <= 0)
+		{
+			DeleteItem(Item);
+		}
+		else
+		{
+			await CartService.UpdateItem(Item);
+		}
+	}
+	protected override async Task OnInitializedAsync()
+	{
+		cartItems = new List<CartItems>();
+		cartItems = await CartService.GetCartItems();
+		product = await ProductService.OnlyThree();
+
+	}
+	private async Task DeleteItem(CartItems Item)
+	{
+		await CartService.DeleteItem(Item);
+		cartItems = await CartService.GetCartItems();
+		StateHasChanged();
+	}
+	private async Task Checkout()
+	{
+		NavigationManager.NavigateTo("Checkout");
+	}
+	private async Task CartClear()
+	{
+		if (cartItems.Count > 0)
+		{
+			await CartService.EmptyCart();
+			cartItems = await CartService.GetCartItems();
+			StateHasChanged();
+		}
+	}
+}

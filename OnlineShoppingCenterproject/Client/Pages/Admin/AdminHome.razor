@@ -1,0 +1,173 @@
+﻿@page "/AdminHome"
+@using OnlineShoppingCenterproject.Core.Dto.CompanysDto
+@using OnlineShoppingCenterproject.Core.Entities
+
+<ForAdminCompany />
+<article class="container">
+	<NavLink href="users/add" class="btn btn-sm btn-success mb-2">Add User</NavLink>
+	<table class="table-striped">
+		<thead>
+			<tr>
+				<th style="width: 20%">First Name</th>
+				<th style="width: 20%">Last Name</th>
+				<th style="width: 15%">Company Name</th>
+				<th style="width: 10%">Gender</th>
+				<th style="width: 10%">Starting Date</th>
+				<th style="width: 30%">Email</th>
+				<th style="width: 30%">ShopLicense</th>
+				<th style="width: 30%">Activations</th>
+				@if (showERP)
+				{
+					<th style="width: 15%">SoldOut Price</th>
+					<th style="width: 20%">SoldOut Quantity</th>
+					<th style="width: 20%">Existing Quantity</th>
+				}
+			</tr>
+		</thead>
+		<tbody>
+			@if (loading)
+			{
+				<tr>
+					<td colspan="12" class="text-center">
+						<span class="spinner-border spinner-border-lg align-center"></span>
+					</td>
+				</tr>
+			}
+			@if (Companys != null)
+			{
+				foreach (var Company in Companys)
+				{
+					<tr>
+						<td>@Company.User.Name</td>
+						<td>@Company.User.LastName</td>
+						<td>@Company.CompanyName</td>
+						<td>@Company.User.Gender</td>
+						<td>@Company.startingDate</td>
+						<td>@Company.User.Email</td>
+						<td>
+							<img src="@Company.ShopLicense" alt="Alternate Text" />
+						</td>
+						<td>@Company.activations</td>
+						@if (showERP)
+						{
+							<th>@companyForERP.SoldOutPrice</th>
+							<th>@companyForERP.SoldOutQuantity</th>
+							<th>@companyForERP.ExistingQuantity</th>
+						}
+						<td style="white-space: nowrap">
+							<NavLink href="@($"EditCompany/{Company.UserName}")" class="btn btn-outline-dark mr-1">Edit</NavLink>
+
+							<button @onclick="@(() => UpdateForActivations(Company.Id))" disabled="@Company.IsClick"
+							class="btn btn-sm btn-outline-primary">
+								@if (!Company.IsClick && Company.activations)
+								{
+									<span>iptal Et</span>
+								}
+								else if (!Company.IsClick && !Company.activations)
+								{
+									<span>Aktevleştir</span>
+								}
+								else
+								{
+									<span class="spinner-border spinner-border-sm"></span>
+								}
+							</button>
+							<button @onclick="@(() => ShowERP(Company.Id))" disabled="@companyForERP.ERPIsClick"
+							class="btn btn-sm btn-outline-info">
+								@if (companyForERP.ERPIsClick)
+								{
+									<span class="spinner-border spinner-border-sm"></span>
+								}
+								else
+								{
+									<span>Show ERP</span>
+								}
+							</button>
+							<button @onclick="@(() => DeleteUser(Company.Id))" disabled="@Company.delete"
+							class="btn btn-sm btn-danger btn-delete-user">
+								@if (Company.delete)
+								{
+									<span class="spinner-border spinner-border-sm"></span>
+								}
+								else
+								{
+									<span>Delete</span>
+								}
+							</button>
+						</td>
+					</tr>
+				}
+			}
+		</tbody>
+	</table>
+	<table class="table-striped">
+		<thead>
+			<tr>
+				<th style="width: 35%">Quantity For All Product</th>
+				<th style="width: 35%">Best Seller For 2020</th>
+				<th style="width: 35%">Best Seller For 2021</th>
+				<th style="width: 35%">Best Seller For 2022</th>
+			</tr>
+		</thead>
+		<tbody>
+			<tr>
+				<td>@QuantityForAllProduct</td>
+				<td>@BestSellerFor20</td>
+				<td>@BestSellerFor21</td>
+				<td>@BestSellerFor22</td>
+			</tr>
+		</tbody>
+	</table>
+</article>
+
+@code {
+	bool loading;
+	bool showERP = false;
+	IList<CompanyDto> Companys = new List<CompanyDto>();
+	public CompanyForERP companyForERP { get; set; } = new CompanyForERP();
+	long QuantityForAllProduct = 0;
+	long BestSellerFor20 = 0;
+	long BestSellerFor21 = 0;
+	long BestSellerFor22 = 0;
+
+	protected override async Task OnInitializedAsync()
+	{
+		loading = true;
+		Companys = await Http.GetFromJsonAsync<IList<CompanyDto>>("api/Company");
+		QuantityForAllProduct = await Http.GetFromJsonAsync<long>($"api/ERP/QuantityForAllProduct");
+		BestSellerFor20 = await Http.GetFromJsonAsync<long>($"api/ERP/BestSellerForYear/{2020}");
+		BestSellerFor21 = await Http.GetFromJsonAsync<long>($"api/ERP/BestSellerForYear/{2021}");
+		BestSellerFor22 = await Http.GetFromJsonAsync<long>($"api/ERP/BestSellerForYear/{2022}");
+		loading = false;
+		StateHasChanged();
+	}
+
+	async Task ShowERP(Guid Id)
+	{
+		companyForERP.ERPIsClick = true;
+		StateHasChanged();
+		companyForERP = await Http.GetFromJsonAsync<CompanyForERP>($"api/ERP/GetCompanyForERP/{Id}");
+		companyForERP.ERPIsClick = false;
+		showERP = true;
+		StateHasChanged();
+	}
+	private async void UpdateForActivations(Guid Id)
+	{
+		var company = Companys.First(x => x.Id == Id);
+		company.IsClick = true;
+		StateHasChanged();
+		var aa = await Http.GetFromJsonAsync<Boolean>($"api/Company/Change/{company.UserName}");
+		company.activations = aa;
+		company.IsClick = false;
+		StateHasChanged();
+
+	}
+	private async void DeleteUser(Guid Id)
+	{
+		var company = Companys.First(x => x.Id == Id);
+		company.delete = true;
+		await Http.DeleteAsync($"api/Company/{company.UserName}");
+		Companys.Remove(company);
+		StateHasChanged();
+	}
+}

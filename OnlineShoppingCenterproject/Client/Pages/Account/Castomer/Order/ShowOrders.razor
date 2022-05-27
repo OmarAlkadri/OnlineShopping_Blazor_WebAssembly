@@ -1,0 +1,64 @@
+﻿@page "/myOrder"
+@using OnlineShoppingCenterproject.Client.Features
+@using OnlineShoppingCenterproject.Core.Dto.OrdersDto
+@using System.Security.Claims
+
+<ForAnother />
+
+<article class="container">
+	<table class="table-striped">
+		<thead>
+			<tr>
+				<th style="width: 35%">OrderId</th>
+				<th style="width: 20%">OrderDate</th>
+				<th style="width: 10%">Time</th>
+				<th style="width: 10%">total</th>
+				<th style="width: 10%">Status</th>
+			</tr>
+		</thead>
+		@for (int i = 0; i < Order.Count; i++)
+		{
+			item = Order[i];
+
+			<tbody>
+				<tr>
+					<td>@item.Id</td>
+					<td>@item.OrderDate</td>
+					<td>@item.Time</td>
+					<td>@item.total</td>
+					<td>@item.status</td>
+					<td style="white-space: nowrap">
+						<button type="button" class="btn btn-outline-success"
+							data-toggle="modal" data-target="#detay@($"{i}")">
+							devamı oku
+						</button>
+						<a href="@($"myOrderItems/{item.Id}")" class="btn btn-outline-info">butun sipariş</a>
+						@*<button type="button" class="btn btn-danger">Iptal</button>*@
+					</td>
+				</tr>
+			</tbody>
+			<Orders Order=item id=i />
+		}
+	</table>
+</article>
+
+@code {
+	List<OrderDto> Order = new List<OrderDto>();
+	OrderDto item = new OrderDto();
+	string userName = "";
+	protected override async Task OnInitializedAsync()
+	{
+		var token = await _localStorage.GetItemAsStringAsync("authToken");
+		if (token != null)
+		{
+			var Id = JwtParser.ParseClaimsFromJwt(token);
+			userName = Id.First(x => x.Type == ClaimTypes.Name).Value;
+			var a = $"api/Order/all/{userName}";
+			Order = await Http.GetFromJsonAsync<List<OrderDto>>(a);
+		}
+		else
+		{
+			NavigationManager.NavigateTo("login");
+		}
+	}
+}

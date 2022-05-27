@@ -1,0 +1,59 @@
+﻿@inherits LayoutComponentBase
+@inject IJSRuntime JS
+
+@implements IDisposable
+
+@using Blazored.Toast.Configuration
+
+<CascadingValue Value="this">
+	<div class="page">
+
+		<main>
+			<div class="ForAll">
+				<TopMenu />
+			</div>
+			@Body
+			<div id="Bottom" class="ForAll">
+				<BottomMenu />
+			</div>
+		</main>
+			
+	</div>
+</CascadingValue>
+
+<BlazoredToasts Position="ToastPosition.BottomRight" Timeout="2" />
+
+@code {
+
+	protected override async Task OnInitializedAsync()
+	{
+		NavigationManager.LocationChanged += async (sender, e) => { await LocationChanged(sender, e); };
+		StateHasChanged();
+	}
+
+	async Task LocationChanged(object sender, LocationChangedEventArgs e)
+	{
+		if (e.Location.Contains("RegistrationCompany") || e.Location.Contains("RegistrationCastomer")
+		|| e.Location.Contains("login")|| e.Location.Contains("logout")
+		|| e.Location.Contains("OrderCompleted"))
+		{
+			await JS.InvokeVoidAsync("hideTopAndBottom");
+		}
+		else
+		{
+			await JS.InvokeVoidAsync("showTopAndBottom");
+		}
+
+		if (e.Location.Contains("AdminHome")||e.Location.Contains("AddProductAdmin")
+		||e.Location.Contains("AddProductCompany")||e.Location.Contains("editCastomer")
+		||e.Location.Contains("EditCompany"))
+		{
+			await JS.InvokeVoidAsync("hideBottom");
+		}
+	}
+
+	public void Dispose()
+	{
+		NavigationManager.LocationChanged -= async (sender, e) => { await LocationChanged(sender, e); };
+	}
+}

@@ -1,0 +1,141 @@
+﻿@page "/RegistrationCastomer"
+@using OnlineShoppingCenterproject.Client.Services
+@using OnlineShoppingCenterproject.Core.Dto.CastomersDto
+@using OnlineShoppingCenterproject.Core.Dto.UsersDto
+@using OnlineShoppingCenterproject.Models
+
+<article class="container">
+
+
+	@if (ShowRegistrationErrors)
+	{
+		<div class="alert alert-danger" role="alert">
+
+			<p>@error</p>
+		</div>
+	}
+	<EditForm Model="_userForRegistration" OnValidSubmit="Register" class="card card-body bg-light mt-5">
+		<DataAnnotationsValidator />
+		<div class="form-group">
+			<div class="col-md-12 text-right">
+				<button @onclick="goTo"
+						class="btn btn-success">
+					<span>Go Register Admin</span>
+				</button>
+
+				<button @onclick="goTo"
+						class="btn btn-success">
+					<span>Go Register Company</span>
+				</button>
+			</div>
+		</div>
+		<div class="form-group row">
+			<label for="Name" class="col-md-2 col-form-label">Name:</label>
+			<div class="col-md-10">
+				<InputText type="text" id="Name" class="form-control" @bind-Value="_userForRegistration.User.Name" />
+				<ValidationMessage For="@(() => _userForRegistration.User.Name)" />
+			</div>
+		</div>
+		<div class="form-group row">
+			<label for="LastName" class="col-md-2 col-form-label">Last Name:</label>
+			<div class="col-md-10">
+				<InputText type="text" id="LastName" class="form-control" @bind-Value="_userForRegistration.User.LastName" />
+				<ValidationMessage For="@(() => _userForRegistration.User.LastName)" />
+			</div>
+		</div>
+		<div class="form-group row">
+			<label for="gender" class="col-md-2 col-form-label">Gender:</label>
+			<div class="col-md-10">
+				<InputSelect id="gender" @bind-Value="@_userForRegistration.User.Gender" class="form-control">
+					@foreach (var gender in Enum.GetValues(typeof(Gender)))
+					{
+						<option value="@gender">@gender</option>
+					}
+				</InputSelect>
+				<ValidationMessage For="@(() => _userForRegistration.User.Gender)" />
+			</div>
+		</div>
+		<div class="form-group row">
+			<label for="email" class="col-md-2 col-form-label">Email:</label>
+			<div class="col-md-10">
+				<InputText id="email" class="form-control" @bind-Value="_userForRegistration.User.Email" />
+				<ValidationMessage For="@(() => _userForRegistration.User.Email)" />
+				@if (ShowRegistrationErrors)
+				{
+					<p style="color:red;" role="alert">@error</p>
+				}
+			</div>
+		</div>
+		<div class="form-group row">
+			<label for="password" class="col-md-2 col-form-label">Password:</label>
+			<div class="col-md-10">
+				<InputText type="password" id="password" class="form-control" @bind-Value="_userForRegistration.User.Password" />
+				<ValidationMessage For="@(() => _userForRegistration.User.Password)" />
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-12 text-right">
+				<button type="submit" disabled="@_userForRegistration.User.IsClick"
+						class="btn btn-success">
+					@if (_userForRegistration.User.IsClick)
+					{
+						<span class="spinner-border spinner-border-sm"></span>
+					}
+					else
+					{
+						<span>Register</span>
+					}
+				</button>
+			</div>
+		</div>
+	</EditForm>
+
+</article>
+@code {
+	CastomerForCreationDto _userForRegistration = new CastomerForCreationDto();
+	[Inject]
+	IAuthenticationService AuthenticationService { get; set; }
+
+	string error { get; set; }
+	bool ShowRegistrationErrors { get; set; }
+	bool ShowAuthError { get; set; }
+	string Error { get; set; }
+	void goTo()
+	{
+		NavigationManager.NavigateTo("/RegistrationCompany");
+	}
+	async Task Register()
+	{
+		_userForRegistration.User.IsClick = true;
+		ShowRegistrationErrors = false;
+		StateHasChanged();
+		if (_userForRegistration.User.Gender == null)
+			_userForRegistration.User.Gender = Gender.Male;
+		_userForRegistration.UserName = _userForRegistration.User.Email;
+		var a = await Http.PostAsJsonAsync("api/Castomer", _userForRegistration);
+		if (a.StatusCode == System.Net.HttpStatusCode.Created)
+		{
+			Login log = new Login();
+			log.Email = _userForRegistration.User.Email;
+			log.Password = _userForRegistration.User.Password;
+			ShowAuthError = false;
+			var resultL = await AuthenticationService.Login(log);
+			if (!resultL.IsAuthSuccessful)
+			{
+				Error = resultL.ErrorMessage;
+				ShowAuthError = true;
+			}
+			else
+			{
+				NavigationManager.NavigateTo("/");
+			}
+		}
+		else
+		{
+			error = a.Content.ReadAsStringAsync().Result.ToString();
+			ShowRegistrationErrors = true;
+		}
+		_userForRegistration.User.IsClick = false;
+		StateHasChanged();
+	}
+}
